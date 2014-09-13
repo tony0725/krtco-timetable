@@ -37,6 +37,7 @@
 
   	var flag = 0;
   	var tempData = {};
+  	var firstTimeLine = true;
   	for (var i = 0; i < lines.length; i++) {
   		var line = lines[i];
   		var txt = line.replace(/\t/g, "");
@@ -79,6 +80,7 @@
   				hours.shift();
   				tempData.hoursHead = hours;
   				tempData.hours = [];
+  				firstTimeLine = true;
   				flag = 4;
   			}
   		}
@@ -106,7 +108,8 @@
 
   			for (var j = 1; j <= mins.length; j++) {
   				var min = mins[j];
-  				if (min != "") {
+  				if (min != "" || (firstTimeLine && j > 1)) {
+  					if (min == "") min = 0;
   					var hHead = tempData.hoursHead[j-1];
   					if (hHead != undefined) {
 	  					if (tempData.hours[hHead] == null) {
@@ -119,6 +122,8 @@
 	  				}
   				}
   			}
+
+  			firstTimeLine = false;
 
   		}
   	};
