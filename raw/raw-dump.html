@@ -1,0 +1,81 @@
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>KRTCO - Raw Dump</title>
+		<script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+		<script src="http://code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+	</head>
+	<body>
+		<input type="file" id="files" name="files" />
+		<div id="msg"></div>
+	</body>
+</html>
+
+<script>
+  function handleFileSelect(evt) {
+    var files = evt.target.files; // FileList object
+    
+    var fileName = files[0].name;
+    msg("loading file '" +  fileName+ "'... ");
+
+    var f = new FileReader();
+
+    f.onload = function(){
+    	var txt = f.result;
+    	msg(files[0].size + ' bytes read OK!', true);
+    	setTimeout(startDump, 500, txt);
+    }
+	f.readAsText(files[0]);	
+    
+  }
+
+  function startDump(txt)
+  {
+  	msg("start dump data...", true);
+  	var lines = txt.split("\n");
+  	msg("raw data has " + lines.length + " lines", true);
+
+  	var flag = 0;
+  	var tempData = {};
+  	for (var i = 0; i < lines.length; i++) {
+  		var line = lines[i];
+
+  		// 找站名
+  		if (flag == 0)
+  		{
+  			var tmp = line.replace(/\t/g, "");
+  			if (tmp.indexOf("站名：") == 0) {
+  				tempData = {};
+  				tempData.stationName = tmp.replace("站名：","");
+  				msg("find station: " + tempData.stationName, true);
+  				flag = 1;
+  			}
+  		}
+  		// 找日型
+  		else if(flag == 1)
+  		{
+  			var tmp = line.replace(/\t/g, "");
+  			if (tmp.indexOf("日型：") == 0) {
+  				tempData.timeType = tmp.replace("日型：","");
+  				msg("find timetype: " + tempData.timeType, true);
+  				flag = 2;
+  			}
+  		}
+  		// 找方向與路線
+  		else if (flag == 2)
+  		{
+  			
+  		}
+  	};
+  }
+
+  function msg(content, newline)
+  {
+  	$('#msg').append(content);
+  	if (newline == true) {
+  		$('#msg').append('<br />');
+  	}
+  }
+
+  document.getElementById('files').addEventListener('change', handleFileSelect, false);
+</script>
