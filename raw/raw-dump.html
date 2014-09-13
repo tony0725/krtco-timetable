@@ -39,14 +39,14 @@
   	var tempData = {};
   	for (var i = 0; i < lines.length; i++) {
   		var line = lines[i];
+  		var txt = line.replace(/\t/g, "");
 
   		// 找站名
   		if (flag == 0)
   		{
-  			var tmp = line.replace(/\t/g, "");
-  			if (tmp.indexOf("站名：") == 0) {
+  			if (txt.indexOf("站名：") == 0) {
   				tempData = {};
-  				tempData.stationName = tmp.replace("站名：","");
+  				tempData.stationName = txt.replace("站名：","");
   				msg("find station: " + tempData.stationName, true);
   				flag = 1;
   			}
@@ -54,9 +54,9 @@
   		// 找日型
   		else if(flag == 1)
   		{
-  			var tmp = line.replace(/\t/g, "");
-  			if (tmp.indexOf("日型：") == 0) {
-  				tempData.timeType = tmp.replace("日型：","");
+  			
+  			if (txt.indexOf("日型：") == 0) {
+  				tempData.timeType = txt.replace("日型：","");
   				msg("find timetype: " + tempData.timeType, true);
   				flag = 2;
   			}
@@ -64,7 +64,62 @@
   		// 找方向與路線
   		else if (flag == 2)
   		{
-  			
+  			if (txt.indexOf("方向：") == 0) {
+  				tempData.direct = txt.substr(3, 2);
+  				tempData.topos = txt.substr(7);
+  				msg("find direction: " + tempData.direct + " to " + tempData.topos, true);
+  				flag = 3;
+  			}
+  		}
+  		// 找"時"行
+  		else if (flag == 3)
+  		{
+  			if (txt.indexOf("時") == 0) {
+  				var hours = line.split('\t');
+  				hours.shift();
+  				tempData.hoursHead = hours;
+  				tempData.hours = [];
+  				flag = 4;
+  			}
+  		}
+  		// 讀取分鐘
+  		else if (flag == 4)
+  		{
+  			msg(line);
+  			var mins = line.replace("分","").split('\t');
+
+  			var reg = /^\d+$/;
+  			for (var j = 0; j < mins.length; j++) {
+  				if (!reg.test(mins[j]) && mins[j] != "") 
+  				{
+  					flag = 5;
+  					break;
+  				}
+  			}
+
+  			if (flag == 5)
+  			{
+  				console.log(tempData);
+				msg("end");
+				continue;
+  			}
+
+  			for (var j = 1; j <= mins.length; j++) {
+  				var min = mins[j];
+  				if (min != "") {
+  					var hHead = tempData.hoursHead[j-1];
+  					if (hHead != undefined) {
+	  					if (tempData.hours[hHead] == null) {
+	  						tempData.hours[hHead] = [min];
+	  						msg(hHead + ":" + min + " *", true);
+	  					} else {
+	  						tempData.hours[hHead].push(min);
+	  						msg(hHead + ":" + min, true);
+	  					}
+	  				}
+  				}
+  			}
+
   		}
   	};
   }
