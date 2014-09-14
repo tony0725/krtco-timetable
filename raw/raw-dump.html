@@ -8,40 +8,42 @@
 	<body>
 		<input type="file" id="files" name="files" />
 		<div id="msg"></div>
+		<pre id="json">
+			
+		</pre>
 	</body>
 </html>
 
 <script>
-  function handleFileSelect(evt) {
-    var files = evt.target.files; // FileList object
-    
-    var fileName = files[0].name;
-    msg("loading file '" +  fileName+ "'... ");
+	function handleFileSelect(evt) {
+		var files = evt.target.files; // FileList object
 
-    var f = new FileReader();
+		var fileName = files[0].name;
+		msg("loading file '" +  fileName+ "'... ");
 
-    f.onload = function(){
-    	var txt = f.result;
-    	msg(files[0].size + ' bytes read OK!', true);
-    	setTimeout(startDump, 500, txt);
-    }
-	f.readAsText(files[0]);	
-    
-  }
+		var f = new FileReader();
 
-  function startDump(txt)
-  {
-  	msg("start dump data...", true);
-  	var lines = txt.split("\n");
-  	msg("raw data has " + lines.length + " lines", true);
+		f.onload = function(){
+			var txt = f.result;
+			msg(files[0].size + ' bytes read OK!', true);
+			setTimeout(startDump, 500, txt);
+		}
+		f.readAsText(files[0]);	
+	}
 
-  	var flag = 0;
-  	var tempData = {};
-  	var firstTimeLine = true;
+	function startDump(content)
+	{
+		msg("start dump data...", true);
+		var lines = content.split("\n");
+		msg("raw data has " + lines.length + " lines", true);
 
-  	var allDatas = { R:{}, O:{} };
-  	var stationLsit = {
-  		R:{
+		var flag = 0;
+		var tempData = {};
+		var firstTimeLine = true;
+
+		var allDatas = { R:{}, O:{} };
+		var stationLsit = {
+			R:{
 	  		name:["南岡山", "橋頭火車站", "橋頭糖廠", "青埔", "都會公園", "後勁", "楠梓加工區", "油廠國小", "世運", "左營", "生態園區", "巨蛋", "凹子底", "後驛", "高雄車站", "美麗島", "中央公園", "三多商圈", "獅甲", "凱旋", "前鎮高中", "草衙", "高雄國際機場", "小港"],
 	  		number:["R24", "R23", "R22", "R22A", "R21", "R20", "R19", "R18", "R17", "R16", "R15", "R14", "R13", "R12", "R11", "R10", "R9", "R8", "R7", "R6", "R5", "R4A", "R4", "R3"]
 	  	},
@@ -49,162 +51,226 @@
 	  		name:["西子灣", "鹽埕埔", "市議會", "美麗島", "信義國小", "文化中心", "五塊厝", "技擊館", "衛武營", "鳳山西站", "鳳山", "大東", "鳳山國中", "大寮"],
 	  		number:["O1", "O2", "O3", "O4", "O5", "O6", "O7", "O8", "O9", "O10", "O11", "O12", "O13", "O14", "OT1"]
 	  	}
-  	};
+		};
 
-  	var currentName = "";
-  	var currentNumber = "";
-  	var currentTimetype = "";
-  	var currentHoursHead = [];
-  	var currentDirect = "";
-  	
-  	for (var i = 0; i < lines.length; i++) {
-  		var line = lines[i];
-  		var txt = line.replace(/\t/g, "");
+		var currentName = null;
+		var currentNumber = null;
+		var currentTimetype = null;
+		var currentHoursHead = null;
+		var currentDirect = null;
 
-  		// 找站名
-  		if (flag == 0)
-  		{
-  			if (txt.indexOf("站名：") == 0) {
-  				tempData = {};
-  				currentName = txt.replace("站名：","");
-  				msg("find station: " + currentName, true);
-  				flag = 1;
-  			}
-  		}
-  		// 找日型
-  		else if(flag == 1)
-  		{
-  			
-  			if (txt.indexOf("日型：") == 0) {
-  				currentTimetype = txt.replace("日型：","");
-  				msg("find timetype: " + currentTimetype, true);
-  				flag = 2;
-  			}
-  		}
-  		// 找方向與路線
-  		else if (flag == 2)
-  		{
-  			if (txt.indexOf("方向：") == 0) {
-  				var direct = txt.substr(3, 2);
-  				var topos = txt.substr(7);
-  				msg("find direction: " + direct + " to " + topos, true);
+		var index = 0;
 
-  				if (direct == "上行") {
-  					currentDirect = "up";
-  				} else if (direct == "下行") {
-  					currentDirect = "down";
-  				} else {
-  					msg("ERROR: unknow direct type " + direct + " <line:" + (i + 1) + ">");
-  					return;
-  				}
+		setTimeout(read, 10);
+		function read() {
+			var line = lines[index];
+			var txt = line.replace(/\t/g, "");
 
-  				if (stationLsit["R"].name.indexOf(topos) >= 0) {
-  					currentNumber = stationLsit["R"].number[stationLsit["R"].name.indexOf(topos)];
-  				} else if (stationLsit["O"].name.indexOf(topos) >= 0) {
-  					currentNumber = stationLsit["O"].number[stationLsit["O"].name.indexOf(topos)];
-  				} else {
-  					msg("ERROR: can not find " + topos + " in station list! <line:" + (i + 1) + ">");
-  					return;
-  				}
+			// 找站名
+			if (flag == 0)
+			{
+				if (txt.indexOf("站名：") == 0) {
+					tempData = {};
+					currentName = txt.replace("站名：","");
+					msg("[station] " + currentName, true);
+					flag = 1;
+				}
+			}
+			// 找日型
+			else if(flag == 1)
+			{
+				
+				if (txt.indexOf("日型：") == 0) {
+					currentTimetype = txt.replace("日型：","");
+					msg("[timetype] " + currentTimetype, true);
+					if (currentTimetype == "平日") currentTimetype = "normal";
+					else if (currentTimetype == "假日前一日") currentTimetype = "friday";
+					else if (currentTimetype == "假日") currentTimetype = "holiday";
+					else {
+						msg("ERROR: unknow time type " + currentTimetype + " <line:" + (index + 1) + ">");
+						return;
+					}
+					flag = 2;
+				}
+			}
+			// 找方向與路線
+			else if (flag == 2)
+			{
+				if (txt.indexOf("方向：") == 0) {
+					var direct = txt.substr(3, 2);
+					var topos = txt.substr(7);
+					msg("[direction] " + direct + " to " + topos, true);
 
-  				msg("station number: " + currentNumber);
+					if (direct == "上行") {
+						currentDirect = "up";
+					} else if (direct == "下行") {
+						currentDirect = "down";
+					} else {
+						msg("ERROR: unknow direct type " + direct + " <line:" + (index + 1) + ">");
+						return;
+					}
 
-  				flag = 3;
-  			}
-  		}
-  		// 找"時"行
-  		else if (flag == 3)
-  		{
-  			if (txt.indexOf("時") == 0) {
-  				var hours = line.split('\t');
-  				hours.shift();
-  				currentHoursHead = hours;
-  				tempData.hours = {};
-  				firstTimeLine = true;
-  				flag = 4;
-  			}
-  		}
-  		// 讀取分鐘
-  		else if (flag == 4)
-  		{
-  			//msg(line);
-  			var mins = line.replace("分","").split('\t');
-
-  			var reg = /^\d+$/;
-  			for (var j = 0; j < mins.length; j++) {
-  				if (!reg.test(mins[j]) && mins[j] != "") 
-  				{
-  					flag = 5;
-  					break;
-  				}
-  			}
-
-  			if (flag == 5)
-  			{
-  				var thisLine = allDatas[currentNumber.substr(0, 1)];
-  				var stationNo = currentNumber.substr(1);
-  				console.log(thisLine);
-  				if (thisLine[stationNo] == undefined) {
-  					thisLine[stationNo] = { name: currentName };
-  				}
-  				if (thisLine[stationNo][currentDirect] == undefined) {
-  					thisLine[stationNo][currentDirect] = { };
-  				}
-  				if (thisLine[stationNo][currentDirect][currentTimetype] == undefined) {
-  					thisLine[stationNo][currentDirect][currentTimetype] = [];
-  				}
-
-  				var data = thisLine[stationNo][currentDirect][currentTimetype];
-  				for (var hKey in tempData.hours) {
-  					for (var i = 0; i < tempData.hours[hKey].length; i++) {
-  						var m = tempData.hours[hKey][i];
-  						m = ((m.length == 1) ? "0" : "") + m;
-  						var h = ((hKey.length == 1) ? "0" : "") + hKey;
-  						var timeString = h + ":" + m;
-  						data.push(timeString);
-  					};
-  				}
-
-  				console.log(allDatas);
-				//msg("end");
-				i--;
-				continue;
-  			}
-
-  			for (var j = 1; j <= mins.length; j++) {
-  				var min = mins[j];
-  				if (min != "" || (firstTimeLine && j > 1)) {
-  					if (min == "") min = 0;
-  					var hHead = currentHoursHead[j-1];
-  					if (hHead != undefined) {
-	  					if (tempData.hours[hHead] == null) {
-	  						tempData.hours[hHead] = [min];
-	  						//msg(hHead + ":" + min + " *", true);
-	  					} else {
-	  						tempData.hours[hHead].push(min);
-	  						//msg(hHead + ":" + min, true);
-	  					}
+					if (stationLsit["R"].name.indexOf(topos) >= 0) {
+						var idx = stationLsit["R"].name.indexOf(currentName);
+						var idx2 = stationLsit["R"].name.indexOf(currentName.substr(0, currentName.length - 1));
+						if (idx >= 0 || idx2 >= 0) {
+	  					currentNumber = stationLsit["R"].number[(idx >= 0) ? idx : idx2];
+	  				} else {
+	  					msg("ERROR: can not find " + currentName + " in red line station list! <line:" + (index + 1) + ">");
+	  					return;
 	  				}
-  				}
-  			}
+					} else if (stationLsit["O"].name.indexOf(topos) >= 0) {
+						var idx = stationLsit["O"].name.indexOf(currentName);
+						var idx2 = stationLsit["O"].name.indexOf(currentName.substr(0, currentName.length - 1));
+						if (idx >= 0 || idx2 >= 0) {
+	  					currentNumber = stationLsit["O"].number[(idx >= 0) ? idx : idx2];
+	  				} else {
+	  					msg("ERROR: can not find " + currentName + " in orange line station list! <line:" + (index + 1) + ">");
+	  					return;
+	  				}
+					} else {
+						msg("ERROR: can not find " + topos + " in station list! <line:" + (index + 1) + ">");
+						return;
+					}
 
-  			firstTimeLine = false;
-  		}
-  		// 判定接下來要做什麼
-  		else if (flag == 5)
-  		{
+					msg("station number: " + currentNumber, true);
 
-  		}
-  	}
-  }
+					flag = 3;
+				}
+			}
+			// 找"時"行
+			else if (flag == 3)
+			{
+				if (txt.indexOf("時") == 0) {
+					var hours = line.split('\t');
+					hours.shift();
+					currentHoursHead = hours;
+					tempData.hours = {};
+					firstTimeLine = true;
+					flag = 4;
+				}
+			}
+			// 讀取分鐘
+			else if (flag == 4)
+			{
+				//msg(line);
+				var mins = line.replace("分","").split('\t');
 
-  function msg(content, newline)
-  {
-  	$('#msg').append(content);
-  	if (newline == true) {
-  		$('#msg').append('<br />');
-  	}
-  }
+				var reg = /^\d+$/;
+				for (var j = 0; j < mins.length; j++) {
+					if (!reg.test(mins[j]) && mins[j] != "") 
+					{
+						flag = 5;
+						break;
+					}
+				}
 
-  document.getElementById('files').addEventListener('change', handleFileSelect, false);
+				if (flag == 5)
+				{
+					var thisLine = allDatas[currentNumber.substr(0, 1)];
+					var stationNo = currentNumber.substr(1);
+
+					if (thisLine[stationNo] == undefined) {
+						thisLine[stationNo] = { name: currentName };
+					}
+					if (thisLine[stationNo][currentDirect] == undefined) {
+						thisLine[stationNo][currentDirect] = { };
+					}
+					if (thisLine[stationNo][currentDirect][currentTimetype] == undefined) {
+						thisLine[stationNo][currentDirect][currentTimetype] = [];
+					}
+
+					var data = thisLine[stationNo][currentDirect][currentTimetype];
+					for (var hKey in tempData.hours) {
+						for (var i = 0; i < tempData.hours[hKey].length; i++) {
+							var m = tempData.hours[hKey][i];
+							m = ((m.length == 1) ? "0" : "") + m;
+							var h = ((hKey.length == 1) ? "0" : "") + hKey;
+							var timeString = h + ":" + m;
+							data.push(timeString);
+						};
+					}
+
+					currentHoursHead = null;
+					currentDirect = null;
+
+					console.log(allDatas);
+					index--;
+				}
+
+				if (flag == 4)
+				{
+	  			for (var j = 1; j <= mins.length; j++) {
+	  				var min = mins[j];
+	  				if (min != "" || (firstTimeLine && j > 1)) {
+	  					if (min == "") min = "0";
+	  					var hHead = currentHoursHead[j-1];
+	  					if (hHead != undefined) {
+		  					if (tempData.hours[hHead] == null) {
+		  						tempData.hours[hHead] = [min];
+		  						//msg(hHead + ":" + min + " *", true);
+		  					} else {
+		  						tempData.hours[hHead].push(min);
+		  						//msg(hHead + ":" + min, true);
+		  					}
+		  				}
+	  				}
+	  			}
+
+	  			firstTimeLine = false;
+	  		}
+			}
+			// 判定接下來要做什麼
+			else if (flag == 5)
+			{
+				if (txt.indexOf("站名：") == 0) {
+					flag = 0;
+					currentName = null;
+					currentNumber = null;
+					currentTimetype = null;
+					currentHoursHead = null;
+					currentDirect = null;
+					index--;
+					msg("next find station name.", true);
+				} else if (txt.indexOf("日型：") == 0) {
+					flag = 1;
+					currentNumber = null;
+				currentTimetype = null;
+				currentHoursHead = null;
+				currentDirect = null;
+				index--;
+				msg("next find direction.", true);
+				} else if (txt.indexOf("方向：") == 0) {
+					flag = 2;
+					currentNumber = null;
+					currentHoursHead = null;
+					currentDirect = null;
+					index--;
+					msg("next find direction.", true);
+				}
+			}
+
+			index++;
+			if (index < lines.length) setTimeout(read, 0);
+			else exportToJson(allDatas);
+		}
+	}	
+
+	function msg(content, newline)
+	{
+		$('#msg').append(content);
+		if (newline == true) {
+			$('#msg').append('<br />');
+		}
+		$("html, body").animate({ scrollTop: $(document).height() }, 0);
+	}
+
+ 	function exportToJson(obj) {
+
+ 		$('#msg').html("");
+		$('#json').html(JSON.stringify(obj, null, 1).replace(/\n/g, "<br />"));
+
+	}
+
+ 	document.getElementById('files').addEventListener('change', handleFileSelect, false);
 </script>
