@@ -38,6 +38,25 @@
   	var flag = 0;
   	var tempData = {};
   	var firstTimeLine = true;
+
+  	var allDatas = { R:{}, O:{} };
+  	var stationLsit = {
+  		R:{
+	  		name:["南岡山", "橋頭火車站", "橋頭糖廠", "青埔", "都會公園", "後勁", "楠梓加工區", "油廠國小", "世運", "左營", "生態園區", "巨蛋", "凹子底", "後驛", "高雄車站", "美麗島", "中央公園", "三多商圈", "獅甲", "凱旋", "前鎮高中", "草衙", "高雄國際機場", "小港"],
+	  		number:["R24", "R23", "R22", "R22A", "R21", "R20", "R19", "R18", "R17", "R16", "R15", "R14", "R13", "R12", "R11", "R10", "R9", "R8", "R7", "R6", "R5", "R4A", "R4", "R3"]
+	  	},
+	  	O:{
+	  		name:["西子灣", "鹽埕埔", "市議會", "美麗島", "信義國小", "文化中心", "五塊厝", "技擊館", "衛武營", "鳳山西站", "鳳山", "大東", "鳳山國中", "大寮"],
+	  		number:["O1", "O2", "O3", "O4", "O5", "O6", "O7", "O8", "O9", "O10", "O11", "O12", "O13", "O14", "OT1"]
+	  	}
+  	};
+
+  	var currentName = "";
+  	var currentNumber = "";
+  	var currentTimetype = "";
+  	var currentHoursHead = [];
+  	var currentDirect = "";
+  	
   	for (var i = 0; i < lines.length; i++) {
   		var line = lines[i];
   		var txt = line.replace(/\t/g, "");
@@ -47,8 +66,8 @@
   		{
   			if (txt.indexOf("站名：") == 0) {
   				tempData = {};
-  				tempData.stationName = txt.replace("站名：","");
-  				msg("find station: " + tempData.stationName, true);
+  				currentName = txt.replace("站名：","");
+  				msg("find station: " + currentName, true);
   				flag = 1;
   			}
   		}
@@ -57,8 +76,8 @@
   		{
   			
   			if (txt.indexOf("日型：") == 0) {
-  				tempData.timeType = txt.replace("日型：","");
-  				msg("find timetype: " + tempData.timeType, true);
+  				currentTimetype = txt.replace("日型：","");
+  				msg("find timetype: " + currentTimetype, true);
   				flag = 2;
   			}
   		}
@@ -66,9 +85,30 @@
   		else if (flag == 2)
   		{
   			if (txt.indexOf("方向：") == 0) {
-  				tempData.direct = txt.substr(3, 2);
-  				tempData.topos = txt.substr(7);
-  				msg("find direction: " + tempData.direct + " to " + tempData.topos, true);
+  				var direct = txt.substr(3, 2);
+  				var topos = txt.substr(7);
+  				msg("find direction: " + direct + " to " + topos, true);
+
+  				if (direct == "上行") {
+  					currentDirect = "up";
+  				} else if (direct == "下行") {
+  					currentDirect = "down";
+  				} else {
+  					msg("ERROR: unknow direct type " + direct + " <line:" + (i + 1) + ">");
+  					return;
+  				}
+
+  				if (stationLsit["R"].name.indexOf(topos) >= 0) {
+  					currentNumber = stationLsit["R"].number[stationLsit["R"].name.indexOf(topos)];
+  				} else if (stationLsit["O"].name.indexOf(topos) >= 0) {
+  					currentNumber = stationLsit["O"].number[stationLsit["O"].name.indexOf(topos)];
+  				} else {
+  					msg("ERROR: can not find " + topos + " in station list! <line:" + (i + 1) + ">");
+  					return;
+  				}
+
+  				msg("station number: " + currentNumber);
+
   				flag = 3;
   			}
   		}
@@ -78,8 +118,8 @@
   			if (txt.indexOf("時") == 0) {
   				var hours = line.split('\t');
   				hours.shift();
-  				tempData.hoursHead = hours;
-  				tempData.hours = [];
+  				currentHoursHead = hours;
+  				tempData.hours = {};
   				firstTimeLine = true;
   				flag = 4;
   			}
@@ -87,7 +127,7 @@
   		// 讀取分鐘
   		else if (flag == 4)
   		{
-  			msg(line);
+  			//msg(line);
   			var mins = line.replace("分","").split('\t');
 
   			var reg = /^\d+$/;
@@ -101,8 +141,33 @@
 
   			if (flag == 5)
   			{
-  				console.log(tempData);
-				msg("end");
+  				var thisLine = allDatas[currentNumber.substr(0, 1)];
+  				var stationNo = currentNumber.substr(1);
+  				console.log(thisLine);
+  				if (thisLine[stationNo] == undefined) {
+  					thisLine[stationNo] = { name: currentName };
+  				}
+  				if (thisLine[stationNo][currentDirect] == undefined) {
+  					thisLine[stationNo][currentDirect] = { };
+  				}
+  				if (thisLine[stationNo][currentDirect][currentTimetype] == undefined) {
+  					thisLine[stationNo][currentDirect][currentTimetype] = [];
+  				}
+
+  				var data = thisLine[stationNo][currentDirect][currentTimetype];
+  				for (var hKey in tempData.hours) {
+  					for (var i = 0; i < tempData.hours[hKey].length; i++) {
+  						var m = tempData.hours[hKey][i];
+  						m = ((m.length == 1) ? "0" : "") + m;
+  						var h = ((hKey.length == 1) ? "0" : "") + hKey;
+  						var timeString = h + ":" + m;
+  						data.push(timeString);
+  					};
+  				}
+
+  				console.log(allDatas);
+				//msg("end");
+				i--;
 				continue;
   			}
 
@@ -110,23 +175,27 @@
   				var min = mins[j];
   				if (min != "" || (firstTimeLine && j > 1)) {
   					if (min == "") min = 0;
-  					var hHead = tempData.hoursHead[j-1];
+  					var hHead = currentHoursHead[j-1];
   					if (hHead != undefined) {
 	  					if (tempData.hours[hHead] == null) {
 	  						tempData.hours[hHead] = [min];
-	  						msg(hHead + ":" + min + " *", true);
+	  						//msg(hHead + ":" + min + " *", true);
 	  					} else {
 	  						tempData.hours[hHead].push(min);
-	  						msg(hHead + ":" + min, true);
+	  						//msg(hHead + ":" + min, true);
 	  					}
 	  				}
   				}
   			}
 
   			firstTimeLine = false;
+  		}
+  		// 判定接下來要做什麼
+  		else if (flag == 5)
+  		{
 
   		}
-  	};
+  	}
   }
 
   function msg(content, newline)
